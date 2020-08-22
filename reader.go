@@ -281,3 +281,33 @@ func (e ReaderEntry) Open() (io.ReadCloser, error) {
 	rc, _, _, err := e.n.Data(e.r.data())
 	return rc, err
 }
+
+// Offset returns the real offset of the entry's contents relative to the base
+// io.ReaderAt used when creating the Reader. If the entry is a directory, the
+// offset points to the first child's tree node. If the entry is a file, the
+// offset points to the first byte of data (immediately after the uint32 size
+// header, plus the 4-byte qCompress zlib header if the node has the
+// NodeFlagCompressed flag).
+func (e ReaderEntry) Offset() int64 {
+	if e.IsDir() {
+		return e.r.treeOffset + e.n.dirTreeOffset()
+	}
+	offset := e.r.dataOffset + e.n.fileDataOffset()
+	if e.n.Flags.Has(NodeFlagCompressed) {
+		offset += 4 // qCompress zlib header
+	}
+	return offset
+}
+
+// Size returns the real (i.e. as-is, possibly compressed) size of the
+// underlying data relative to the base io.ReaderAt used when creating the
+// Reader. If the entry is a directory, the size is the total of all child tree
+// nodes (i.e. Offset() + Size() = end of last child). If the entry is a file, the
+// size is the size of the underlying data in the file. To get the uncompressed
+// size, Open() the entry and count the number of bytes read.
+func (e ReaderEntry) Size() (int64, error) {
+	if e.IsDir() {
+		return e.n.dirSize(), nil
+	}
+	return e.n.fileSize(e.r.data())
+}
