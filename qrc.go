@@ -164,7 +164,7 @@ func (n Node) Children(tree io.ReaderAt) ([]*Node, error) {
 	}
 
 	c := make([]*Node, int(n.ChildCount))
-	r := io.NewSectionReader(tree, int64(n.ChildOffset)*nodeSize(n.Format), int64(n.ChildCount)*nodeSize(n.Format))
+	r := io.NewSectionReader(tree, n.dirTreeOffset(), n.dirSize())
 	for i := range c {
 		v, err := ParseNode(r, n.Format)
 		if err != nil {
@@ -188,37 +188,71 @@ func (n Node) Data(data io.ReaderAt) (rc io.ReadCloser, fileOff int64, fileSz in
 		return nil, 0, 0, fmt.Errorf("invalid flags: %w", err)
 	}
 
-	var length uint32
-	if err := binary.Read(io.NewSectionReader(data, int64(n.DataOffset), 4), binary.BigEndian, &length); err != nil {
-		return nil, 0, 0, fmt.Errorf("read data length: %w", err)
+	fileOff = n.fileDataOffset()
+
+	if size, err := n.fileSize(data); err != nil {
+		return nil, 0, 0, err
+	} else {
+		fileSz = size
 	}
 
-	r := io.NewSectionReader(data, int64(n.DataOffset)+4, int64(length))
+	r := io.NewSectionReader(data, fileOff, fileSz)
 	switch {
 	case n.Flags.Has(NodeFlagCompressed):
 		var zsz uint32 // note that this isn't strict; qUncompress will accept data longer
 		if err := binary.Read(r, binary.BigEndian, &zsz); err != nil {
 			return nil, 0, 0, fmt.Errorf("read qCompress original size header from zlib data: %w", err)
 		}
+		fileOff += 4
 
-		fileOff, fileSz = int64(n.DataOffset)+4+4, int64(length)
 		zr, err := zlib.NewReader(r)
 		if err != nil {
 			return nil, 0, 0, fmt.Errorf("open zlib reader: %w", err)
 		}
 		rc = zr
 	case n.Flags.Has(NodeFlagCompressedZstd):
-		fileOff, fileSz = int64(n.DataOffset)+4, int64(length)
 		zr, err := zstd.NewReader(r)
 		if err != nil {
 			return nil, 0, 0, fmt.Errorf("open zstd reader: %w", err)
 		}
 		rc = ioutil.NopCloser(zr)
 	default:
-		fileOff, fileSz = int64(n.DataOffset)+4, int64(length)
 		rc = ioutil.NopCloser(r)
 	}
 	return rc, fileOff, fileSz, nil
+}
+
+func (n Node) dirTreeOffset() int64 {
+	if !n.IsDir() {
+		panic("dirTreeOffset called on non-dir node")
+	}
+	return int64(n.ChildOffset) * nodeSize(n.Format)
+}
+
+func (n Node) fileDataOffset() int64 {
+	if n.IsDir() {
+		panic("fileDataOffset called on dir node")
+	}
+	return int64(n.DataOffset) + 4 // skip uint32 size header
+}
+
+func (n Node) dirSize() int64 {
+	if !n.IsDir() {
+		panic("dirSize called on non-dir node")
+	}
+	return int64(n.ChildCount) * nodeSize(n.Format)
+}
+
+func (n Node) fileSize(data io.ReaderAt) (int64, error) {
+	if n.IsDir() {
+		panic("fileSize called on dir node")
+	}
+
+	var length uint32
+	if err := binary.Read(io.NewSectionReader(data, int64(n.DataOffset), 4), binary.BigEndian, &length); err != nil {
+		return 0, fmt.Errorf("read data length: %w", err)
+	}
+	return int64(length), nil
 }
 
 // TODO: func (n Node) ReplaceData(data io.ReaderAt, dataW io.WriterAt, buf []byte) error
