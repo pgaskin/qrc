@@ -208,7 +208,7 @@ func (n Node) Data(data io.ReaderAt) (rc io.ReadCloser, fileOff int64, fileSz in
 		}
 		rc = zr
 	case n.Flags.Has(NodeFlagCompressedZstd):
-		fileOff, fileSz = int64(n.DataOffset)+4+4, int64(length)
+		fileOff, fileSz = int64(n.DataOffset)+4, int64(length)
 		zr, err := zstd.NewReader(r)
 		if err != nil {
 			return nil, 0, 0, fmt.Errorf("open zstd reader: %w", err)
