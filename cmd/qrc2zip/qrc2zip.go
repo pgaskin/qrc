@@ -180,6 +180,11 @@ func (q2z QRC2Zip) generate(w *zip.Writer, r *qrc.Reader) error {
 				return filepath.SkipDir
 			}
 		}
+		var offset, size int64
+		if err == nil && entry != nil {
+			offset = entry.Offset()
+			size, err = entry.Size()
+		}
 		if err != nil {
 			if q2z.Verbose {
 				fmt.Printf("ERROR  %q (%v)\n", rpath, err)
@@ -192,7 +197,7 @@ func (q2z QRC2Zip) generate(w *zip.Writer, r *qrc.Reader) error {
 		}
 		if entry.IsDir() {
 			if q2z.Verbose {
-				fmt.Printf("DIR     %q\n", rpath)
+				fmt.Printf("DIR     %q (0x%X + %d)\n", rpath, offset, size)
 			}
 			return nil
 		}
@@ -215,9 +220,9 @@ func (q2z QRC2Zip) generate(w *zip.Writer, r *qrc.Reader) error {
 
 		if q2z.Verbose {
 			if rpath != f {
-				fmt.Printf("FILE    %q => %q\n", rpath, f)
+				fmt.Printf("FILE    %q => %q (0x%X + %d)\n", rpath, f, offset, size)
 			} else {
-				fmt.Printf("FILE    %q\n", rpath)
+				fmt.Printf("FILE    %q (0x%X + %d)\n", rpath, offset, size)
 			}
 		}
 
