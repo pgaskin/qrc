@@ -8,8 +8,8 @@ if [ "$#" -eq 0 ] || [ "$1" -eq 0 ]; then
 fi
 
 if [ "$#" -eq 0 ] || [ "$1" -eq 1 ]; then
-    echo "> Downloading nickel from pgaskin/kobopatch-patches/testdata/4.23.15505.tar.xz" 1>&2
-    wget -qO- https://github.com/pgaskin/kobopatch-patches/raw/master/testdata/4.23.15505.tar.xz | tar xJvf - nickel || { echo "Error: nickel download failed." 1>&2; exit 1; }
+    echo "> Downloading nickel from pgaskin/kobopatch-testdata/4.23.15505.tar.xz" 1>&2
+    wget -qO- https://github.com/pgaskin/kobopatch-testdata/raw/v1/4.23.15505.tar.xz | tar xJvf - nickel || { echo "Error: nickel download failed." 1>&2; exit 1; }
 fi
 
 if [ "$#" -eq 0 ] || [ "$1" -eq 2 ]; then
