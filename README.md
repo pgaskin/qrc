@@ -10,6 +10,8 @@ See [pkg.go.dev/github.com/pgaskin/qrc](https://pkg.go.dev/github.com/pgaskin/qr
 
 The command-line tool, [qrc2zip](./qrc2zip), can be installed with `GO111MODULE=on go get github.com/pgaskin/qrc/cmd/qrc2zip`.
 
+To automatically find offsets for ARM binaries with Qt resources embedded by rcc, use `scripts/armqrc.py`.
+
 ```
 Usage: qrc2zip [options] rcc_file
        qrc2zip [options] executable format_version tree_offset data_offset names_offset
