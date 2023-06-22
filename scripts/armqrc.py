@@ -26,12 +26,19 @@ for binary in sys.argv[1:]:
                             emu = uc.Uc(uc.UC_ARCH_ARM, uc.UC_MODE_THUMB if qrc_init&1 else uc.UC_MODE_ARM)
 
                             # load the elf
-                            with open(binary, "rb") as f2:
-                                for x in elf.iter_segments("PT_LOAD"):
-                                    vaddr, offset, filesz, memsz, flags = x["p_vaddr"], x["p_offset"], x["p_filesz"], x["p_memsz"], x["p_flags"]
-                                    f2.seek(offset)
-                                    emu.mem_map(vaddr, memsz + (1024-memsz%1024), (uc.UC_PROT_EXEC if flags&0b001 else 0) + (uc.UC_PROT_WRITE if flags&0b010 else 0) + (uc.UC_PROT_READ if flags&0b100 else 0))
-                                    emu.mem_write(vaddr, f2.read(filesz) + bytes([0]*(memsz - filesz)))
+                            for x in elf.iter_segments("PT_LOAD"):
+                                page_size = 1024
+                                seg_addr = x["p_vaddr"]
+                                seg_size = x["p_memsz"]
+                                seg_prot = x["p_flags"]
+                                map_addr = (seg_addr//page_size)*page_size
+                                map_size = ((seg_size+seg_addr-map_addr)//page_size + 1)*page_size
+                                map_prot = 0
+                                map_prot |= uc.UC_PROT_EXEC if seg_prot&0b001 else 0
+                                map_prot |= uc.UC_PROT_WRITE if seg_prot&0b010 else 0
+                                map_prot |= uc.UC_PROT_READ if seg_prot&0b100 else 0
+                                emu.mem_map(map_addr, map_size, map_prot)
+                                emu.mem_write(seg_addr, x.data()) # p_offset, p_filesz
 
                             # initialize the stack
                             emu.mem_map(0x40000000 - 0x10000, 0x10000)
