@@ -1,0 +1,58 @@
+name: Test
+on:
+  push:
+  pull_request:
+
+jobs:
+  test_go:
+    name: Go
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.14.x'
+      - name: Go vet
+        run: go vet ./...
+      - name: Go test
+        run: go test -v ./...
+  test_kb_qrc2zip:
+    name: nickel.15505 (qrc2zip)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.14.x'
+      - name: Test - build
+        run: ./test/nickel.15505.sh 0
+      - name: Test - download
+        run: ./test/nickel.15505.sh 1
+      - name: Test - extract
+        run: ./test/nickel.15505.sh 2
+      - name: Test - sha1sums
+        run: ./test/nickel.15505.sh 3
+      - name: Test - list
+        run: ./test/nickel.15505.sh 4
+      - name: Test - cleanup
+        run: ./test/nickel.15505.sh 5
+  test_kb_armqrc:
+    name: nickel.15505 (armqrc)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install pyelftools==0.29 unicorn==2.0.0
+      - name: Download nickel
+        run: ./test/nickel.15505.sh 1
+      - name: Run armqrc
+        run: python ./scripts/armqrc.py ./test/nickel 
