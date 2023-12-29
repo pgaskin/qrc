@@ -71,25 +71,27 @@ func main() {
 	case 1:
 		err = q2z.DoRCC(pflag.Args()[0])
 	case 5:
-		formatVersion, err := strconv.Atoi(pflag.Args()[1])
+		var formatVersion int
+		var treeOffset, dataOffset, namesOffset int64
+		formatVersion, err = strconv.Atoi(pflag.Args()[1])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: parse format version %q: %v.\n", pflag.Args()[1], err)
 			os.Exit(2)
 			return
 		}
-		treeOffset, err := strconv.ParseInt(pflag.Args()[2], 10, 64)
+		treeOffset, err = strconv.ParseInt(pflag.Args()[2], 10, 64)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: parse tree offset %q: %v.\n", pflag.Args()[2], err)
 			os.Exit(2)
 			return
 		}
-		dataOffset, err := strconv.ParseInt(pflag.Args()[3], 10, 64)
+		dataOffset, err = strconv.ParseInt(pflag.Args()[3], 10, 64)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: parse data offset %q: %v.\n", pflag.Args()[3], err)
 			os.Exit(2)
 			return
 		}
-		namesOffset, err := strconv.ParseInt(pflag.Args()[4], 10, 64)
+		namesOffset, err = strconv.ParseInt(pflag.Args()[4], 10, 64)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: parse names offset %q: %v.\n", pflag.Args()[4], err)
 			os.Exit(2)
